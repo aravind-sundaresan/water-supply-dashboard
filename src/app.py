@@ -450,9 +450,14 @@ fig.update_layout(
     yaxis_title=t['volume_kl'],
     legend_title='',
     template='simple_white',
-    margin=dict(l=20, r=20, t=40, b=20)
+    margin=dict(l=20, r=20, t=40, b=20),
+    width=700,  # Minimum readable width
+    height=400
 )
-st.plotly_chart(fig, use_container_width=True)
+# Place the chart in a horizontally scrollable div
+st.markdown('<div style="overflow-x:auto; width:100%;">', unsafe_allow_html=True)
+st.plotly_chart(fig)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # Suggested Next Steps
 suggestions = {
