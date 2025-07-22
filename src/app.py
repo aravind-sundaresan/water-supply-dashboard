@@ -92,8 +92,8 @@ metrics_cols = [
 ]
 df = df.fillna(0)
 
-# Load disgruntled consumers data
-dis_df = pd.read_excel('data/IVR PoC - Scheme Report Sample.xlsx', sheet_name='IVR PoC - Disgruntled Consumers')
+# Remove loading of disgruntled consumers data
+# dis_df = pd.read_excel('data/IVR PoC - Scheme Report Sample.xlsx', sheet_name='IVR PoC - Disgruntled Consumers')
 
 # Set page configuration
 st.set_page_config(
@@ -219,6 +219,70 @@ st.markdown('''
         }
     }
     </style>
+''', unsafe_allow_html=True)
+
+# Add/modify CSS for metrics grid to always be 2x2
+st.markdown('''
+    <style>
+    .metrics-grid, .mobile-metrics-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 1rem !important;
+        margin-bottom: 1.2rem !important;
+    }
+    .metric-card, .mobile-metric-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+        padding: 1.2rem 0.5rem 0.7rem 0.5rem;
+        text-align: center;
+        min-width: 0;
+    }
+    @media (max-width: 600px) {
+        .metrics-grid, .mobile-metrics-grid {
+            grid-template-columns: 1fr 1fr !important;
+        }
+    }
+    </style>
+''', unsafe_allow_html=True)
+
+# Add/modify CSS for satisfaction grid to always be 1x3
+st.markdown('''
+<style>
+.satisfaction-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 1rem !important;
+    margin-bottom: 1.2rem !important;
+}
+.satisfaction-card {
+    border-radius: 12px;
+    padding: 0.7rem 0.2rem;
+    text-align: center;
+    font-size: 1rem;
+}
+.satisfaction-happy { background: #dcf7f3; }
+.satisfaction-neutral { background: #ffefd5; }
+.satisfaction-sad { background: #ffd4d4; }
+.satisfaction-emoji {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
+}
+.satisfaction-label {
+    font-weight: bold;
+    color: #222;
+}
+.satisfaction-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #222;
+}
+@media (max-width: 600px) {
+    .satisfaction-grid {
+        grid-template-columns: 1fr 1fr 1fr !important;
+    }
+}
+</style>
 ''', unsafe_allow_html=True)
 
 # --- MOBILE LAYOUT CSS & LOGIC ---
@@ -365,6 +429,17 @@ st.markdown('''
     }
     </style>
 ''', unsafe_allow_html=True)
+
+# --- MOBILE DETECTION LOGIC (st.columns hack) ---
+if 'force_mobile' not in st.session_state:
+    try:
+        col1, col2 = st.columns([1, 1])
+        # Streamlit does not expose column width directly, so use a workaround:
+        # Place a hidden element in col1 and measure its width with CSS/JS if needed.
+        # For now, default to False (desktop) and allow manual override if needed.
+        st.session_state['force_mobile'] = False
+    except Exception:
+        st.session_state['force_mobile'] = False
 
 # --- MOBILE LAYOUT RENDERING ---
 if st.session_state.get('force_mobile', False):
@@ -518,117 +593,69 @@ else:
         unsafe_allow_html=True
     )
 
-    # Key Metrics Section
-    col1, col2 = st.columns(2)
+    # Key Metrics Section (guaranteed 2x2 grid)
+    st.markdown('''
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-icon">💧</div>
+        <div class="metric-label">{gets_water_daily}</div>
+        <div class="metric-value">{gets_water_daily_val}%</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon">⏰</div>
+        <div class="metric-label">{same_time}</div>
+        <div class="metric-value">{same_time_val}%</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon">🚰</div>
+        <div class="metric-label">{satisfied_quantity}</div>
+        <div class="metric-value">{satisfied_quantity_val}%</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon">✅</div>
+        <div class="metric-label">{satisfied_quality}</div>
+        <div class="metric-value">{satisfied_quality_val}%</div>
+    </div>
+</div>
+'''.format(
+    gets_water_daily=t['gets_water_daily'],
+    gets_water_daily_val=int(current_row['Gets Water Daily %']*100),
+    same_time=t['same_time'],
+    same_time_val=int(current_row['Gets Water at Same Time %']*100),
+    satisfied_quantity=t['satisfied_quantity'],
+    satisfied_quantity_val=int(current_row['Satisfied with Quantity %']*100),
+    satisfied_quality=t['satisfied_quality'],
+    satisfied_quality_val=int(current_row['Satisfied with Quality %']*100),
+), unsafe_allow_html=True)
 
-    with col1:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div style="font-size: 2rem;">💧</div>
-                <div class="metric-value">{current_row['Gets Water Daily %']*100:.0f}%</div>
-                <div class="metric-label">{t['gets_water_daily']}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            f"""
-            <div class="metric-card" style="margin-top: 1rem;">
-                <div style="font-size: 2rem;">🚰</div>
-                <div class="metric-value">{current_row['Satisfied with Quantity %']*100:.0f}%</div>
-                <div class="metric-label">{t['satisfied_quantity']}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col2:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div style="font-size: 2rem;">⏰</div>
-                <div class="metric-value">{current_row['Gets Water at Same Time %']*100:.0f}%</div>
-                <div class="metric-label">{t['same_time']}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            f"""
-            <div class="metric-card" style="margin-top: 1rem;">
-                <div style="font-size: 2rem;">✅</div>
-                <div class="metric-value">{current_row['Satisfied with Quality %']*100:.0f}%</div>
-                <div class="metric-label">{t['satisfied_quality']}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    # Overall Satisfaction Section
+    # Overall Satisfaction Section (guaranteed 1x3 row)
     st.markdown(f"<h3 style='color: #1a237e; margin-top: 0.2rem; margin-bottom: 1.5rem;'>{t['overall_satisfaction']}</h3>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown(
-            f"""
-            <div class="emoji-card" style="background: #dcf7f3;">
-                <div class="emoji">😊</div>
-                <div style="font-weight: bold; color: #000;">{t['happy']}</div>
-                <div style="font-size: 1.5rem; font-weight: bold; color: #000;">{current_row['Overall Happy %']*100:.0f}%</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col2:
-        st.markdown(
-            f"""
-            <div class="emoji-card" style="background: #ffefd5;">
-                <div class="emoji">😐</div>
-                <div style="font-weight: bold; color: #000;">{t['neutral']}</div>
-                <div style="font-size: 1.5rem; font-weight: bold; color: #000;">{current_row['Overall Neutral %']*100:.0f}%</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col3:
-        st.markdown(
-            f"""
-            <div class="emoji-card" style="background: #ffd4d4;">
-                <div class="emoji">😔</div>
-                <div style="font-weight: bold; color: #000;">{t['sad']}</div>
-                <div style="font-size: 1.5rem; font-weight: bold; color: #000;">{current_row['Overall Sad %']*100:.0f}%</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    # Disgruntled consumers table (moved up)
-    st.markdown(f"<h4 style='color: #1a237e; margin-top: 2rem;'>{t['disgruntled_consumers']}</h4>", unsafe_allow_html=True)
-    dis_table = dis_df[dis_df['Scheme Name'] == selected_scheme][[
-        'Consumer Name',
-        'Consumer Ph Number',
-        'Gets Water Daily',
-        'Gets Water Daily at Same Time',
-        'Satisfied with quantity',
-        'Satisfied with Quality',
-        'Overall Satisfaction'
-    ]].reset_index(drop=True)
-    dis_table.insert(0, 'Sl No', dis_table.index + 1)
-    dis_table = dis_table.rename(columns={
-        'Sl No': t['serial_number'],
-        'Consumer Name': t['consumer_name'],
-        'Consumer Ph Number': t['consumer_phone'],
-        'Gets Water Daily': t['gets_water_daily'],
-        'Gets Water Daily at Same Time': t['same_time'],
-        'Satisfied with quantity': t['satisfied_quantity'],
-        'Satisfied with Quality': t['satisfied_quality'],
-        'Overall Satisfaction': t['overall_satisfaction'],
-    })
-    # Show the table with responsive width (fits screen size) and hide the default index
-    st.dataframe(dis_table, use_container_width=True, hide_index=True)
+    st.markdown('''
+<div class="satisfaction-grid">
+    <div class="satisfaction-card satisfaction-happy">
+        <div class="satisfaction-emoji">😊</div>
+        <div class="satisfaction-label">{happy}</div>
+        <div class="satisfaction-value">{happy_val}%</div>
+    </div>
+    <div class="satisfaction-card satisfaction-neutral">
+        <div class="satisfaction-emoji">😐</div>
+        <div class="satisfaction-label">{neutral}</div>
+        <div class="satisfaction-value">{neutral_val}%</div>
+    </div>
+    <div class="satisfaction-card satisfaction-sad">
+        <div class="satisfaction-emoji">😔</div>
+        <div class="satisfaction-label">{sad}</div>
+        <div class="satisfaction-value">{sad_val}%</div>
+    </div>
+</div>
+'''.format(
+    happy=t['happy'],
+    happy_val=int(current_row['Overall Happy %']*100),
+    neutral=t['neutral'],
+    neutral_val=int(current_row['Overall Neutral %']*100),
+    sad=t['sad'],
+    sad_val=int(current_row['Overall Sad %']*100),
+), unsafe_allow_html=True)
 
     # Add spacing before the line chart to prevent overlap
     st.markdown("<div style='margin-top: 2rem;'></div>", unsafe_allow_html=True)
